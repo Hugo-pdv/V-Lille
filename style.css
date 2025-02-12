@@ -1,0 +1,339 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    overflow: hidden; /* Évite le scroll sur mobile */
+    width: 100vw;
+    height: 100vh;
+}
+
+.container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+h1 {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    font-size: clamp(16px, 4vw, 24px);
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+/* Style personnalisé pour les popups */
+.custom-popup {
+    padding: 12px;
+    min-width: min(200px, 90vw);
+    max-width: 90vw;
+}
+
+.custom-popup h3 {
+    margin: 0 0 8px 0;
+    color: #2c3e50;
+    font-size: clamp(14px, 4vw, 16px);
+    word-break: break-word;
+}
+
+.custom-popup .address {
+    color: #7f8c8d;
+    font-size: clamp(12px, 3.5vw, 14px);
+    margin-bottom: 12px;
+}
+
+.custom-popup .stats {
+    display: flex;
+    justify-content: space-around;
+    margin: 15px 0;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    display: block;
+    font-size: clamp(16px, 5vw, 20px);
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+.status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 12px;
+    margin: 8px 0;
+}
+
+.status.active {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.status.inactive {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.update-time {
+    font-size: 11px;
+    color: #95a5a6;
+    text-align: right;
+}
+
+/* Animation des marqueurs */
+.leaflet-marker-icon {
+    transition: all 0.3s ease;
+}
+
+.leaflet-marker-icon:hover {
+    transform: scale(1.1);
+}
+
+/* Style personnalisé pour les contrôles */
+.leaflet-control-zoom {
+    border: none !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+}
+
+.leaflet-control-zoom a {
+    background: white !important;
+    color: #2c3e50 !important;
+    border: none !important;
+}
+
+.leaflet-control-zoom a:hover {
+    background: #f8f9fa !important;
+}
+
+/* Style du conteneur de la carte */
+.map-container {
+    padding: 20px;
+    background: linear-gradient(135deg, #f6f8f9 0%, #e5ebee 100%);
+    border-radius: 15px;
+    margin: 20px auto;
+}
+
+.legend {
+    background: white;
+    padding: 10px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin: 20px;
+}
+
+.legend-title {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #2c3e50;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.legend-color {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    margin-right: 8px;
+    display: inline-block;
+}
+
+/* Adaptation de la légende pour mobile */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 16px;
+        padding: 8px 15px;
+        top: 10px;
+    }
+
+    .legend {
+        margin: 10px;
+    }
+
+    .legend {
+        max-width: 150px;
+        font-size: 12px;
+        padding: 8px;
+    }
+
+    .legend-title {
+        font-size: 13px;
+    }
+
+    .legend-item {
+        margin: 3px 0;
+    }
+
+    .legend-color {
+        width: 12px;
+        height: 12px;
+    }
+
+    /* Masquer la légende en mode portrait sur mobile */
+    @media (orientation: portrait) {
+        .legend {
+            display: none;
+        }
+    }
+}
+
+/* Adaptation des contrôles pour mobile */
+@media (max-width: 768px) {
+    .leaflet-control-zoom {
+        margin-bottom: 60px !important;
+    }
+
+    .leaflet-control-zoom a {
+        width: 30px !important;
+        height: 30px !important;
+        line-height: 30px !important;
+        font-size: 16px !important;
+    }
+}
+
+/* Style des popups Leaflet pour mobile */
+.leaflet-popup-content {
+    margin: 8px;
+    width: auto !important;
+}
+
+@media (max-width: 768px) {
+    .leaflet-popup-content {
+        max-width: 85vw;
+    }
+}
+
+/* Assurer que la carte occupe tout l'espace disponible */
+.leaflet-container {
+    width: 100%;
+    height: 100%;
+}
+
+/* Ajouter ces styles pour les filtres */
+.filters {
+    background: white;
+    padding: 15px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin: 20px;
+    min-width: 200px;
+}
+
+.filters-title {
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.filter-item {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+    cursor: pointer;
+}
+
+.filter-item label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 13px;
+    color: #2c3e50;
+}
+
+.filter-color {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    margin: 0 8px;
+    display: inline-block;
+}
+
+.filter-item input[type="checkbox"] {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+/* Adaptation mobile */
+@media (max-width: 768px) {
+    .filters {
+        margin: 10px;
+        padding: 10px;
+        min-width: 180px;
+    }
+
+    .filter-item {
+        margin: 6px 0;
+    }
+
+    .filter-color {
+        width: 12px;
+        height: 12px;
+    }
+
+    /* En mode portrait, placer les filtres en bas */
+    @media (orientation: portrait) {
+        .filters {
+            position: fixed !important;
+            bottom: 20px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            z-index: 1000;
+            max-width: 90%;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .filters-title {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .filter-item {
+            margin: 0;
+        }
+    }
+}
+
+/* Animation des filtres */
+.filter-item label:hover {
+    opacity: 0.8;
+}
+
+.filter-item input[type="checkbox"]:checked + label {
+    font-weight: 500;
+} 
