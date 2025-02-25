@@ -1,12 +1,29 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Constantes et utilitaires
+    const STATION_COLORS = {
+        INACTIVE: '#808080',
+        EMPTY: '#f44336',
+        FEW: '#FFA500',
+        AVAILABLE: '#4CAF50'
+    };
+    
+    const FILTER_CONFIG = [
+        { id: 'available', color: STATION_COLORS.AVAILABLE, label: 'Disponible' },
+        { id: 'few', color: STATION_COLORS.FEW, label: 'Peu de vélos' },
+        { id: 'empty', color: STATION_COLORS.EMPTY, label: 'Aucun vélo' },
+        { id: 'inactive', color: STATION_COLORS.INACTIVE, label: 'Hors service' }
+    ];
+    
+    const isMobile = () => window.innerWidth <= 768;
+    
     const getStationColor = (station) => {
-        if (station.etat !== 'EN SERVICE') return '#808080';
-        if (station.nb_velos_dispo === 0) return '#f44336';
-        if (station.nb_velos_dispo < 5) return '#FFA500';
-        return '#4CAF50';
+        if (station.etat !== 'EN SERVICE') return STATION_COLORS.INACTIVE;
+        if (station.nb_velos_dispo === 0) return STATION_COLORS.EMPTY;
+        if (station.nb_velos_dispo < 5) return STATION_COLORS.FEW;
+        return STATION_COLORS.AVAILABLE;
     };
 
-    // Configuration de la carte
+    // Initialisation de la carte
     const map = L.map('map', {
         zoomControl: false,
         tap: true,
@@ -20,22 +37,16 @@ document.addEventListener('DOMContentLoaded', () => {
         maxZoom: 19
     }).addTo(map);
 
-    // Configuration des filtres
+    // Création des filtres
     const createFilterControl = () => {
         const filters = L.control({ position: 'topleft' });
         
-        filters.onAdd = (map) => {
+        filters.onAdd = () => {
             const div = L.DomUtil.create('div', 'info filters');
-            const filterConfig = [
-                { id: 'available', color: '#4CAF50', label: 'Disponible' },
-                { id: 'few', color: '#FFA500', label: 'Peu de vélos' },
-                { id: 'empty', color: '#f44336', label: 'Aucun vélo' },
-                { id: 'inactive', color: '#808080', label: 'Hors service' }
-            ];
-
+            
             div.innerHTML = `
                 <div class="filters-title">Filtres</div>
-                ${filterConfig.map(filter => `
+                ${FILTER_CONFIG.map(filter => `
                     <div class="filter-item">
                         <input type="checkbox" id="filter-${filter.id}" checked>
                         <label for="filter-${filter.id}">
@@ -56,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     createFilterControl().addTo(map);
 
     // Gestion des stations
-    const createStationPopup = (station, isMobile) => {
+    const createStationPopup = (station) => {
         return `
             <div class="custom-popup">
                 <h3>${station.nom}</h3>
@@ -82,18 +93,24 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const shouldDisplayStation = (station) => {
-        const isInactive = station.etat !== 'EN SERVICE' && document.getElementById('filter-inactive').checked;
-        const isActive = station.etat === 'EN SERVICE' && (
-            (station.nb_velos_dispo === 0 && document.getElementById('filter-empty').checked) ||
-            (station.nb_velos_dispo < 5 && station.nb_velos_dispo > 0 && document.getElementById('filter-few').checked) ||
-            (station.nb_velos_dispo >= 5 && document.getElementById('filter-available').checked)
-        );
-        return isInactive || isActive;
+        if (station.etat !== 'EN SERVICE') {
+            return document.getElementById('filter-inactive').checked;
+        }
+        
+        if (station.nb_velos_dispo === 0) {
+            return document.getElementById('filter-empty').checked;
+        }
+        
+        if (station.nb_velos_dispo < 5) {
+            return document.getElementById('filter-few').checked;
+        }
+        
+        return document.getElementById('filter-available').checked;
     };
 
-    const createStationMarker = (station, isMobile) => {
+    const createStationMarker = (station) => {
         const marker = L.circleMarker([station.y, station.x], {
-            radius: isMobile ? 8 : 10,
+            radius: isMobile() ? 8 : 10,
             fillColor: getStationColor(station),
             color: '#fff',
             weight: 2,
@@ -101,48 +118,54 @@ document.addEventListener('DOMContentLoaded', () => {
             fillOpacity: 0.8
         });
 
-        marker.bindPopup(createStationPopup(station, isMobile), {
+        marker.bindPopup(createStationPopup(station), {
             autoPan: true,
             autoPanPadding: [10, 10],
-            maxWidth: isMobile ? 280 : 300
+            maxWidth: isMobile() ? 280 : 300
         });
 
         return marker;
     };
 
-    async function loadStations() {
+    // Chargement des données
+    async function fetchStations() {
         try {
-            map.eachLayer(layer => {
-                if (layer instanceof L.CircleMarker) map.removeLayer(layer);
-            });
-
             const response = await fetch('data.json');
-            const { velos: stations } = await response.json();
-            const isMobile = window.innerWidth <= 768;
-
-            stations
-                .filter(shouldDisplayStation)
-                .forEach(station => createStationMarker(station, isMobile).addTo(map));
-
-            if (isMobile) {
-                map.on('click', () => map.closePopup());
-            }
+            return (await response.json()).velos;
         } catch (error) {
-            console.error('Erreur lors du chargement des stations:', error);
+            console.error('Erreur lors du chargement des données:', error);
+            return [];
         }
+    }
+
+    async function loadStations() {
+        // Supprimer les marqueurs existants
+        map.eachLayer(layer => {
+            if (layer instanceof L.CircleMarker) map.removeLayer(layer);
+        });
+
+        const stations = await fetchStations();
+        
+        stations
+            .filter(shouldDisplayStation)
+            .forEach(station => createStationMarker(station).addTo(map));
     }
 
     // Initialisation
     async function initMap() {
         try {
-            const response = await fetch('data.json');
-            const { velos: stations } = await response.json();
+            const stations = await fetchStations();
             
-            const bounds = L.latLngBounds(stations.map(s => [s.y, s.x]));
-            map.fitBounds(bounds, {
-                padding: [50, 50],
-                maxZoom: 13
-            });
+            if (stations.length > 0) {
+                const bounds = L.latLngBounds(stations.map(s => [s.y, s.x]));
+                map.fitBounds(bounds, {
+                    padding: [50, 50],
+                    maxZoom: 13
+                });
+            } else {
+                // Position par défaut (Lille)
+                map.setView([50.63297, 3.057520], 13);
+            }
         } catch (error) {
             console.error('Erreur lors de l\'initialisation:', error);
             map.setView([50.63297, 3.057520], 13);
@@ -153,15 +176,23 @@ document.addEventListener('DOMContentLoaded', () => {
     initMap().then(() => {
         loadStations();
         setInterval(loadStations, 30000);
+        
+        if (isMobile()) {
+            map.on('click', () => map.closePopup());
+        }
     });
 
     // Gestion des événements
-    ['available', 'few', 'empty', 'inactive'].forEach(id => {
-        document.getElementById(`filter-${id}`).addEventListener('change', loadStations);
+    FILTER_CONFIG.forEach(filter => {
+        document.getElementById(`filter-${filter.id}`).addEventListener('change', loadStations);
     });
 
+    // Gestion du redimensionnement
+    let previousIsMobile = isMobile();
     window.addEventListener('resize', () => {
-        if ((window.innerWidth <= 768) !== (window.innerWidth <= 768)) {
+        const currentIsMobile = isMobile();
+        if (previousIsMobile !== currentIsMobile) {
+            previousIsMobile = currentIsMobile;
             location.reload();
         }
     });
